@@ -1,0 +1,49 @@
+;x , y , z , v 均为16位带符号数，计算( v - ( x*y + z – 540 ) ) / x
+
+
+
+; 将内存位置 X（值假设为 x）的值复制到 AX 寄存器
+MOV AX, X   
+
+; 乘法运算，AX（即 x）和 Y 相乘，乘积的结果会存储在 DX:AX（其中 DX 是高16位，AX 是低16位）
+IMUL Y   
+
+; 将 AX 中的低16位乘积复制到 CX 寄存器，此时 CX = x * y 的低16位
+MOV CX, AX   
+
+; 将 DX 中的高16位乘积复制到 BX 寄存器，此时 BX = x * y 的高16位
+MOV BX, DX   
+
+; 将内存位置 Z（值假设为 z）的值复制到 AX 寄存器
+MOV AX, Z   
+
+; 将 AX 中的符号位扩展到 DX 中，即将 DX 设为 0（如果 AX 是正数）或 -1（如果 AX 是负数）
+CWD   
+
+; 以 CX = CX + AX 的方式，将 AX 的值加到 CX 中
+ADD CX, AX   
+
+; 在处理加法运算的进位的同时，将 DX 的值加到 BX 中
+ADC BX, DX   
+
+; 从 CX 中减去 540，即 CX = CX - 540
+SUB CX, 540   
+
+; 在处理减法运算的借位的同时，从 BX 中减去 0
+SBB BX, 0   
+
+; 将内存位置 V（值假设为 v）的值复制到 AX 寄存器
+MOV AX, V   
+
+; 将 AX 中的符号位扩展到 DX 中，即将 DX 设为 0（如果 AX 是正数）或 -1（如果 AX 是负数）
+CWD   
+
+; 从 AX 中减去 CX 的值，即 AX = AX - CX
+SUB AX, CX   
+
+; 在处理减法运算的借位的同时，从 DX 中减去 BX 的值，即 DX = DX - BX
+SBB DX, BX   
+
+; 用 X 除以 DX:AX，商存储在 AX 中，余数存储在 DX 中
+IDIV X   
+
