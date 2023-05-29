@@ -1,0 +1,19 @@
+ORG 100h            ; 设置代码的起始地址为100h
+
+MOV SI, OFFSET n1   ; 将n1的偏移地址置入变址寄存器SI，用作地址指针
+MOV AL, 00h         ; 待传送数据的起始值00H 送 AL
+MOV CX, 20h         ; 循环计数值32（或20H）送计数寄存器CX
+
+LoopStart:
+    MOV [SI], AL    ; AL中的内容送至地址指针所指存储器单元
+    INC AL          ; AL加1，逐步得到01H，02H，03H，…，1FH
+    INC SI          ; 地址指针SI加1，指向下一个地址单元
+    LOOP LoopStart  ; 循环结束判断
+
+END                 ; 结束程序
+
+DATA SEGMENT
+n1 DB 32 DUP(?)     ; 声明32个字节的内存单元，用于存储数据
+DATA ENDS
+
+CODE ENDS
