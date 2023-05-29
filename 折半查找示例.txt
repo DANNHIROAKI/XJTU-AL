@@ -1,0 +1,72 @@
+dseg segment                           ; 定义数据段
+    low_idx dw ?                      ; 用于存储最低索引
+    high_idx dw ?                     ; 用于存储最高索引
+dseg ends
+
+cseg segment                           ; 定义代码段
+assume cs:cseg, ds:dseg, es:dseg
+
+b_search proc near
+    push ds                           ; 保存调用者的数据段寄存器DS
+    push ax                           ; 保存AX寄存器中的值
+    mov ax, dseg                      ; 将数据段的段地址存入AX寄存器
+    mov ds, ax                        ; 将数据段的段地址存入DS寄存器
+    mov es, ax                        ; 将数据段的段地址存入ES寄存器
+    pop ax                            ; 恢复之前保存的AX寄存器中的值
+
+    ; 检查AX是否超出列表的边界
+    mov ax, es:[di+2]                 ; 获取列表中第一个元素的值
+    cmp ax, axres                     ; 将AX与目标值axres进行比较
+    jb chk_last                       ; 如果AX < axres，跳转到chk_last进行检查
+    je exit                           ; 如果AX = axres，说明已找到目标值，设置CF=0并退出
+    stc                               ; 如果AX > axres，说明AX超出列表边界，设置CF=1
+    jmp exit                          ; 跳转到exit并退出
+
+chk_last:
+    mov si, es:[di]                   ; 获取列表中最后一个元素的偏移地址
+    shl si, 1                         ; 将偏移地址左移一位，以便使用字单元而非字节单元
+    add si, di                        ; 计算最后一个元素的物理地址
+    cmp ax, [si]                      ; 将AX与最后一个元素的值进行比较
+    jb search                         ; 如果AX < [si]，跳转到search进行搜索
+    je exit                           ; 如果AX = [si]，说明已找到目标值，设置CF=0并退出
+    stc                               ; 如果AX > [si]，说明AX超出列表边界，设置CF=1
+    jmp exit                          ; 跳转到exit并退出
+:Search for value within the list,
+search:
+    mov low_idx, 1                    ; 将最低索引设置为1
+    mov bx, es:[di]                   ; 获取列表中第一个元素的值
+    mov high_idx, bx                  ; 将列表中第一个元素的值存入最高索引
+    mov bx, di                        ; 将当前地址存入BX寄存器
+    mov cx, low_idx                   ; 将最低索引存入CX寄存器
+    mov dx, high_idx                  ; 将最高索引存入DX寄存器
+    cmp cx, dx                        ; 比较最低索引和最高索引
+    ja mo_match                       ; 如果最低索引大于最高索引，说明已找到目标值，跳转到mo_match
+    add cx, dx                        ; 计算最低索引和最高索引的和
+    shr cx, 1                         ; 将和右移一位，计算中间点
+    mov si, cx                        ; 将中间点存入SI寄存器
+    shl si, 1                         ; 将中间点左移一位，以便使用字单元
+    cmp ax, es:[bx+si]                ; 将AX与中间点的值进行比较
+    je exit                           ; 如果AX = 中间点的值，说明已找到目标值，设置CF=0并退出
+    ja higher                         ; 如果AX > 中间点的值，说明目标值在中间点之后，跳转到higher
+    ;fetch index
+mid:                                  ; 计算中间点
+    ;calculate next search addr
+    ;search value found?
+    ;il so,exit
+    ;otherwise,find correct half
+    dec cx                            ; 将中间点减一，更新最高索引
+    mov high_idx, cx                  ; 将更新后的最高索引存入high_idx
+    jmp mid                           ; 跳转到mid继续进行搜索
+
+higher:                               ; 如果目标值较大，执行以下指令
+    inc cx                            ; 将中间点加一，更新最低索引
+    mov low_idx, cx                   ; 将更新后的最低索引存入low_idx
+    jmp mid                           ; 跳转到mid继续进行搜索
+
+no_match:
+    stc                               ; 设置CF=1，说明未找到目标值
+    ;Following are exit instructions.
+exit:
+    pop ds                            ; 恢复调用者的数据段寄存器DS
+    ret                               ; 返回到调用者
+
